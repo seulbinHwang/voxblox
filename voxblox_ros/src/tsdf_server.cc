@@ -38,7 +38,9 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       accumulate_icp_corrections_(true),
       pointcloud_queue_size_(1),
       num_subscribers_tsdf_map_(0),
-      transformer_(nh, nh_private) {
+      transformer_(nh, nh_private) 
+      // constructor start
+      {
   getServerConfigFromRosParam(nh_private);
 
   // Advertise topics.
@@ -147,6 +149,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                                 &TsdfServer::publishMapEvent, this);
   }
 }
+// constructor end
 
 void TsdfServer::getServerConfigFromRosParam(
     const ros::NodeHandle& nh_private) {

@@ -1,3 +1,68 @@
+<!-- 
+
+이 XML 파일은 ROS(로봇 운영 체제)에서 사용되는 `launch` 파일
+`launch` 파일은 여러 노드(node)들을 함께 실행하고, 그 노드들의 파라미터를 설정할 때 사용
+이 파일은 ROS 시스템에서 특정 작업을 자동화하고, 여러 노드와 파라미터를 한 번에 실행하는 데 도움
+
+### 전체 구조
+이 `launch` 파일은 두 개의 주요 노드를 실행하는 데 사용됩니다:
+1. `rosbag`을 재생하는 노드 (`player`).
+2. `voxblox_ros` 패키지의 TSDF 서버 노드 (`voxblox_node`).
+
+### 각 요소의 설명
+
+1. **<arg> 태그**
+   - 이 태그는 런치 파일에서 사용할 수 있는 매개변수(변수)를 정의
+     - 매개변수는 기본값을 가질 수 있으며, 런치 파일이 실행될 때 사용자가 다른 값을 지정할 수 있습니다.
+   - `play_bag`: 기본값은 `true`이며, 이 값을 통해 ROSBAG 파일을 재생할지 여부를 결정
+   - `bag_file`: ROSBAG 파일의 경로를 지정합니다. 이 파일은 센서 데이터 등이 기록된 파일입니다.
+   - `voxel_size`: `voxblox_node`에서 사용하는 복셀 크기를 정의합니다. 기본값은 `0.20`입니다.
+
+2. **<node> 태그**
+   - `name`: 노드의 이름을 지정합니다.
+   - `pkg`: 노드가 속한 ROS 패키지를 지정합니다.
+   - `type`: 실행할 노드의 타입(실행 파일 이름)을 지정합니다.
+   - `output`: `screen`으로 설정하면 노드의 출력이 터미널에 표시됩니다.
+   - `args`: 노드에 전달되는 추가 인수입니다.
+
+   **첫 번째 노드 (`player`)**:
+   - `pkg="rosbag"`: `rosbag` 패키지의 실행 파일을 실행합니다.
+   - `type="play"`: `rosbag` 패키지의 `play` 실행 파일을 사용하여 `.bag` 파일을 재생합니다.
+   - `args="-r 1.0 "-"clock $(arg bag_file)"`: `-r 1.0`은 재생 속도를 1배속으로 설정하고, 
+      - `"-"clock`은 ROS 시간을 시뮬레이션하도록 합니다. 
+      - `$(arg bag_file)`은 재생할 `.bag` 파일의 경로입니다.
+   - `if="$(arg play_bag)"`: `play_bag`이 `true`일 때만 이 노드를 실행합니다.
+
+   **두 번째 노드 (`voxblox_node`)**:
+   - `pkg="voxblox_ros"`: `voxblox_ros` 패키지의 실행 파일을 실행
+   - `type="tsdf_server"`: `voxblox_ros` 패키지의 TSDF 서버 노드를 실행
+   - `args=""-"alsologtostderr"`: 표준 오류 출력에도 로그를 남기도록 설정
+   - `clear_params="true"`: 이 노드가 실행되기 전에 기존의 모든 파라미터를 지웁니다.
+   - `remap`: 특정 ROS topic를 다른 이름으로 매핑합니다.
+     - `pointcloud` topic를 `camera/depth/points` 주제로 매핑합니다.
+     - `transform` topic를 `camera_imu/vrpn_client/estimated_transform` topic로 매핑
+   - `param`: 노드의 특정 파라미터를 설정합니다.
+     - `tsdf_voxel_size`: 복셀 크기를 설정합니다. 기본값은 `$(arg voxel_size)`입니다.
+     - `tsdf_voxels_per_side`: 각 복셀 블록의 복셀 개수를 설정합니다. 여기서는 16으로 설정되어 있습니다.
+     - `voxel_carving_enabled`: 복셀 카빙 기능을 활성화합니다. (즉, 빈 공간을 제거하는 기능)
+     - `color_mode`: 컬러 모드를 설정합니다.
+     - `use_tf_transforms`: TF 변환을 사용하지 않도록 설정합니다.
+     - `update_mesh_every_n_sec`: 메쉬 업데이트 주기를 1초로 설정합니다.
+     - `verbose`: 자세한 로그 출력을 활성화합니다.
+     - `min_time_between_msgs_sec`: 메시지 간 최소 간격을 0.2초로 설정합니다.
+     - `max_ray_length_m`: 최대 레이 길이를 2.0미터로 설정합니다.
+   - `rosparam file="$(find voxblox_ros)/cfg/rgbd_dataset.yaml"`: `rgbd_dataset.yaml` 파일에서 추가 파라미터를 불러옵니다.
+   - `mesh_filename`: 생성된 메쉬 파일의 이름과 경로를 설정합니다.
+
+### 요약
+- 이 `launch` 파일은 먼저 ROSBAG 파일을 재생하여 기록된 데이터를 불러옵니다. 
+- 그런 다음, `voxblox_ros`의 TSDF 서버 노드를 실행하여 포인트 클라우드 데이터를 처리하고, TSDF 기반의 3D 지도를 생성합니다. 
+  - 이 과정에서 특정 파라미터와 설정들이 사용되어 복셀 크기, 메시 생성 주기 등을 제어합니다.
+
+-->
+
+
+
 <?xml version="1.0" encoding="ISO-8859-15"?>
 <launch>
   <arg name="play_bag" default="true" />
